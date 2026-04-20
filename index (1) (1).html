@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrafficIQ — Predictive Urban Traffic Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --black: #0a0c0f;
+  --dark: #111418;
+  --dark2: #161b22;
+  --dark3: #1c2330;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8edf2;
+  --text2: #7a8694;
+  --text3: #4a5568;
+  --accent: #f0c040;
+  --accent2: #e8a020;
+  --red: #ff4b4b;
+  --orange: #ff8c42;
+  --green: #2ecc71;
+  --blue: #4a9eff;
+  --mono: 'DM Mono', monospace;
+  --head: 'Syne', sans-serif;
+  --body: 'Instrument Sans', sans-serif;
+  --r: 6px;
+  --r2: 12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--black);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 13px;
+  line-height: 1.5;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== TOPBAR ===== */
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+  background: var(--dark);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 100;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-icon {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.brand-name {
+  font-family: var(--head);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+.brand-name span { color: var(--accent); }
+.brand-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 2px;
+  display: block;
+  margin-top: -4px;
+}
+.topbar-center {
+  display: flex;
+  gap: 4px;
+}
+.tab-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+.tab-btn.active {
+  background: rgba(240,192,64,0.1);
+  border-color: rgba(240,192,64,0.3);
+  color: var(--accent);
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  padding: 4px 10px;
+  border: 1px solid rgba(46,204,113,0.25);
+  border-radius: 20px;
+  background: rgba(46,204,113,0.06);
+}
+.pulse-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: blink 1.4s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+#live-time {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+}
+
+/* ===== MAIN LAYOUT ===== */
+#main {
+  display: grid;
+  grid-template-columns: 300px 1fr 300px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  background: var(--dark);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+.sidebar-right { border-right: none; border-left: 1px solid var(--border); }
+.sec-head {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text3);
+  padding: 14px 16px 8px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background: var(--dark);
+  z-index: 5;
+}
+.sec-badge {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-family: var(--mono);
+}
+.badge-red { background: rgba(255,75,75,0.15); color: var(--red); border: 1px solid rgba(255,75,75,0.2); }
+.badge-amber { background: rgba(255,140,66,0.15); color: var(--orange); border: 1px solid rgba(255,140,66,0.2); }
+.badge-green { background: rgba(46,204,113,0.12); color: var(--green); border: 1px solid rgba(46,204,113,0.2); }
+.badge-blue { background: rgba(74,158,255,0.12); color: var(--blue); border: 1px solid rgba(74,158,255,0.2); }
+
+/* ===== MAP ===== */
+#map-wrap {
+  position: relative;
+  background: var(--dark2);
+  overflow: hidden;
+}
+#map-canvas { display: block; }
+
+/* ===== CCTV GRID ===== */
+.cctv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+}
+.cctv-feed {
+  background: #000;
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  position: relative;
+}
+.cctv-feed:hover { border-color: var(--accent); }
+.cctv-feed.alert-feed { border-color: var(--red); }
+.cctv-canvas { display: block; width: 100%; }
+.cctv-label {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.75);
+  padding: 3px 6px;
+  font-family: var(--mono);
+  font-size: 8px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--text2);
+}
+.cctv-label span { color: var(--accent); }
+.cctv-rec {
+  position: absolute;
+  top: 5px; left: 5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--red);
+}
+
+/* ===== METRICS ===== */
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px;
+}
+.metric-card {
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 12px;
+}
+.metric-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text3);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.metric-val {
+  font-family: var(--head);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.metric-sub { font-size: 10px; color: var(--text2); margin-top: 3px; }
+.metric-card.red .metric-val { color: var(--red); }
+.metric-card.orange .metric-val { color: var(--orange); }
+.metric-card.green .metric-val { color: var(--green); }
+.metric-card.blue .metric-val { color: var(--blue); }
+.metric-card.yellow .metric-val { color: var(--accent); }
+
+/* ===== ROAD SEGMENTS TABLE ===== */
+.road-list { padding: 6px 8px; }
+.road-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--r);
+  margin-bottom: 4px;
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.road-item:hover { border-color: var(--border2); background: var(--dark3); }
+.road-item.selected { border-color: var(--accent); background: rgba(240,192,64,0.05); }
+.road-color-bar { width: 4px; height: 36px; border-radius: 2px; flex-shrink: 0; }
+.road-name { font-size: 12px; font-weight: 600; flex: 1; }
+.road-name small { font-weight: 400; color: var(--text2); font-size: 10px; display: block; }
+.road-speed {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: right;
+}
+.road-speed small { color: var(--text2); font-size: 9px; display: block; }
+.road-congestion {
+  width: 60px;
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.road-congestion-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+/* ===== FORECAST PANEL ===== */
+.forecast-section { padding: 8px; }
+.forecast-label { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: 1px; padding: 4px 0 8px; }
+#forecast-canvas { width: 100%; border-radius: var(--r); }
+.lstm-info {
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+  line-height: 1.7;
+}
+.lstm-info strong { color: var(--accent); }
+
+/* ===== EVENT LOG ===== */
+.event-log { padding: 6px 8px; }
+.event-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 7px 8px;
+  border-radius: var(--r);
+  margin-bottom: 4px;
+  border-left: 2px solid;
+  background: var(--dark2);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.event-item.ev-red { border-color: var(--red); }
+.event-item.ev-orange { border-color: var(--orange); }
+.event-item.ev-green { border-color: var(--green); }
+.event-item.ev-blue { border-color: var(--blue); }
+.event-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+.event-body { flex: 1; }
+.event-time { font-family: var(--mono); font-size: 9px; color: var(--text3); white-space: nowrap; }
+
+/* ===== PREDICTION CARDS ===== */
+.prediction-list { padding: 6px 8px; }
+.pred-card {
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.pred-card:hover { border-color: var(--border2); }
+.pred-card.critical { border-color: rgba(255,75,75,0.4); background: rgba(255,75,75,0.03); }
+.pred-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.pred-route { font-size: 12px; font-weight: 600; }
+.pred-prob {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.prob-high { background: rgba(255,75,75,0.15); color: var(--red); }
+.prob-med { background: rgba(255,140,66,0.15); color: var(--orange); }
+.prob-low { background: rgba(46,204,113,0.12); color: var(--green); }
+.pred-eta { font-size: 10px; color: var(--text2); margin-bottom: 6px; }
+.pred-bar-bg { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.pred-bar-fill { height: 100%; border-radius: 2px; transition: width 1s; }
+
+/* ===== CONTROLS ===== */
+.ctrl-section { padding: 8px; }
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ctrl-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 1px;
+  min-width: 80px;
+}
+input[type=range] {
+  flex: 1;
+  accent-color: var(--accent);
+  height: 3px;
+}
+.ctrl-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+  min-width: 34px;
+  text-align: right;
+}
+.btn-row { display: flex; gap: 6px; margin-top: 4px; }
+.action-btn {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 7px 8px;
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.action-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.action-btn.red-btn { border-color: rgba(255,75,75,0.3); color: var(--red); }
+.action-btn.red-btn:hover { background: rgba(255,75,75,0.08); }
+.action-btn.yellow-btn { border-color: rgba(240,192,64,0.3); color: var(--accent); }
+.action-btn.yellow-btn:hover { background: rgba(240,192,64,0.08); }
+
+/* ===== MAP LEGEND ===== */
+.map-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(17,20,24,0.9);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text2);
+}
+.leg-line { width: 20px; height: 3px; border-radius: 2px; }
+
+/* ===== HOTSPOT TOOLTIP ===== */
+.map-tooltip {
+  position: absolute;
+  background: rgba(10,12,15,0.95);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  pointer-events: none;
+  z-index: 200;
+  display: none;
+  line-height: 1.8;
+  min-width: 180px;
+}
+.map-toolbar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.map-tool-btn {
+  width: 32px; height: 32px;
+  background: rgba(17,20,24,0.9);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text2);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+}
+.map-tool-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+/* ===== FUSION STATUS ===== */
+.fusion-bar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+}
+.fusion-item {
+  flex: 1;
+  background: var(--dark2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 8px;
+  text-align: center;
+}
+.fusion-icon { font-size: 16px; margin-bottom: 4px; }
+.fusion-name { font-family: var(--mono); font-size: 8px; color: var(--text3); letter-spacing: 1px; }
+.fusion-status { font-size: 10px; font-weight: 600; margin-top: 2px; }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="brand">
+    <div class="brand-icon">🚦</div>
+    <div>
+      <div class="brand-name">Traffic<span>IQ</span></div>
+      <div class="brand-sub">HYBRID PREDICTIVE TRAFFIC INTELLIGENCE</div>
+    </div>
+  </div>
+  <div class="topbar-center">
+    <button class="tab-btn active" onclick="switchTab('map')">GIS MAP</button>
+    <button class="tab-btn" onclick="switchTab('cctv')">CCTV FEEDS</button>
+    <button class="tab-btn" onclick="switchTab('forecast')">LSTM FORECAST</button>
+    <button class="tab-btn" onclick="switchTab('fusion')">DATA FUSION</button>
+  </div>
+  <div class="topbar-right">
+    <div class="live-badge"><div class="pulse-dot"></div>LIVE FEED</div>
+    <div id="live-time">--:--:--</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar" id="left-panel">
+    <div class="sec-head">ROAD SEGMENTS <span class="sec-badge badge-red" id="jam-count">0 JAMS</span></div>
+    <div class="road-list" id="road-list"></div>
+
+    <div class="sec-head" style="margin-top:4px">FUSION STATUS</div>
+    <div class="fusion-bar">
+      <div class="fusion-item">
+        <div class="fusion-icon">📡</div>
+        <div class="fusion-name">GPS API</div>
+        <div class="fusion-status" style="color:var(--green)" id="gps-status">LIVE</div>
+      </div>
+      <div class="fusion-item">
+        <div class="fusion-icon">📷</div>
+        <div class="fusion-name">CCTV CV</div>
+        <div class="fusion-status" style="color:var(--green)" id="cv-status">ACTIVE</div>
+      </div>
+      <div class="fusion-item">
+        <div class="fusion-icon">🧠</div>
+        <div class="fusion-name">LSTM</div>
+        <div class="fusion-status" style="color:var(--accent)" id="lstm-status">RUNNING</div>
+      </div>
+    </div>
+
+    <div class="sec-head" style="margin-top:4px">SIMULATION</div>
+    <div class="ctrl-section">
+      <div class="ctrl-row">
+        <span class="ctrl-lbl">CONGESTION</span>
+        <input type="range" id="cong-slider" min="0" max="100" value="40">
+        <span class="ctrl-val" id="cong-val">40%</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-lbl">VEHICLE VOL</span>
+        <input type="range" id="vol-slider" min="50" max="500" value="200">
+        <span class="ctrl-val" id="vol-val">200</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-lbl">SIM SPEED</span>
+        <input type="range" id="spd-slider" min="1" max="5" value="2">
+        <span class="ctrl-val" id="spd-val">2x</span>
+      </div>
+      <div class="btn-row">
+        <button class="action-btn red-btn" onclick="triggerAccident()">ACCIDENT</button>
+        <button class="action-btn yellow-btn" onclick="triggerRush()">RUSH HOUR</button>
+      </div>
+      <div class="btn-row">
+        <button class="action-btn" onclick="clearAll()">CLEAR ALL</button>
+        <button class="action-btn" onclick="randomizeTraffic()">RANDOMIZE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: MAP -->
+  <div id="map-wrap">
+    <canvas id="map-canvas"></canvas>
+    <div class="map-legend">
+      <div class="leg-item"><div class="leg-line" style="background:var(--green)"></div>FREE FLOW</div>
+      <div class="leg-item"><div class="leg-line" style="background:var(--accent)"></div>SLOW</div>
+      <div class="leg-item"><div class="leg-line" style="background:var(--orange)"></div>CONGESTED</div>
+      <div class="leg-item"><div class="leg-line" style="background:var(--red)"></div>STANDSTILL</div>
+      <div class="leg-item"><div class="leg-line" style="background:var(--blue);border:1px dashed var(--blue)"></div>PREDICTED JAM</div>
+    </div>
+    <div class="map-toolbar">
+      <button class="map-tool-btn" onclick="zoom(1.2)">+</button>
+      <button class="map-tool-btn" onclick="zoom(0.8)">−</button>
+      <button class="map-tool-btn" onclick="resetView()" title="Reset">⌂</button>
+      <button class="map-tool-btn" onclick="toggleHeatmap()" title="Heatmap" id="hm-btn">🔥</button>
+    </div>
+    <div class="map-tooltip" id="map-tooltip"></div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sidebar sidebar-right" id="right-panel">
+    <div class="sec-head">LSTM PREDICTIONS <small style="letter-spacing:0;font-size:9px">NEXT 15–45 MIN</small></div>
+    <div class="prediction-list" id="pred-list"></div>
+
+    <div class="sec-head" style="margin-top:4px">CONGESTION FORECAST</div>
+    <div class="forecast-section">
+      <div class="forecast-label">VEHICLE DENSITY — NEXT 60 MIN</div>
+      <canvas id="forecast-canvas" height="100"></canvas>
+      <div class="lstm-info" id="lstm-info">
+        <strong>LSTM MODEL:</strong> 3-layer RNN<br>
+        <strong>INPUT:</strong> GPS flow + CCTV density<br>
+        <strong>HORIZON:</strong> 15/30/45 min<br>
+        <strong>ACCURACY:</strong> <span id="lstm-acc">--</span>
+      </div>
+    </div>
+
+    <div class="sec-head" style="margin-top:4px">METRICS <span class="sec-badge badge-blue">LIVE</span></div>
+    <div class="metric-grid">
+      <div class="metric-card yellow"><div class="metric-label">AVG SPEED</div><div class="metric-val" id="m-speed">--</div><div class="metric-sub">km/h network</div></div>
+      <div class="metric-card red"><div class="metric-label">CONGESTED</div><div class="metric-val" id="m-cong">--</div><div class="metric-sub">road segments</div></div>
+      <div class="metric-card blue"><div class="metric-label">VEHICLES</div><div class="metric-val" id="m-veh">--</div><div class="metric-sub">detected CV</div></div>
+      <div class="metric-card green"><div class="metric-label">FLOW RATE</div><div class="metric-val" id="m-flow">--</div><div class="metric-sub">veh/min avg</div></div>
+    </div>
+
+    <div class="sec-head" style="margin-top:4px">EVENT LOG</div>
+    <div class="event-log" id="event-log"></div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// DATA MODEL
+// ============================================================
+
+const ROAD_NETWORK = [
+  { id:'R1', name:'NH-48 Delhi-Gurugram', short:'NH-48', from:[80,120], to:[680,180], baseSpeed:65, width:5 },
+  { id:'R2', name:'Ring Road South', short:'Ring Rd S', from:[120,200], to:[600,260], baseSpeed:50, width:4 },
+  { id:'R3', name:'Outer Ring Road', short:'ORR', from:[60,320], to:[700,290], baseSpeed:55, width:5 },
+  { id:'R4', name:'Mathura Road', short:'Mathura Rd', from:[200,80], to:[260,480], baseSpeed:45, width:3 },
+  { id:'R5', name:'GT Karnal Road', short:'GT Karnal', from:[460,60], to:[420,500], baseSpeed:60, width:4 },
+  { id:'R6', name:'Rohtak Road', short:'Rohtak Rd', from:[80,220], to:[400,160], baseSpeed:50, width:3 },
+  { id:'R7', name:'Loni Road', short:'Loni Rd', from:[500,100], to:[580,450], baseSpeed:40, width:3 },
+  { id:'R8', name:'DND Flyway', short:'DND', from:[320,300], to:[440,480], baseSpeed:70, width:4 },
+];
+
+const JUNCTIONS = [
+  { id:'J1', name:'Rajiv Chowk', x:200, y:170, type:'major' },
+  { id:'J2', name:'AIIMS Junction', x:310, y:240, type:'major' },
+  { id:'J3', name:'Nehru Place', x:410, y:310, type:'major' },
+  { id:'J4', name:'Sarai Kale Khan', x:380, y:410, type:'signal' },
+  { id:'J5', name:'Azadpur Chowk', x:160, y:290, type:'signal' },
+  { id:'J6', name:'Lal Qila', x:490, y:200, type:'minor' },
+  { id:'J7', name:'Kashmere Gate', x:520, y:160, type:'signal' },
+  { id:'J8', name:'ITO Crossing', x:340, y:330, type:'major' },
+];
+
+const CCTV_CAMERAS = [
+  { id:'CAM-01', name:'NH-48 Km 12', x:200, y:148, junctionId:'J1' },
+  { id:'CAM-02', name:'AIIMS Crossing', x:310, y:240, junctionId:'J2' },
+  { id:'CAM-03', name:'Nehru Place Fly', x:410, y:310, junctionId:'J3' },
+  { id:'CAM-04', name:'DND Toll Plaza', x:370, y:390, junctionId:'J4' },
+  { id:'CAM-05', name:'Azadpur Metro', x:160, y:290, junctionId:'J5' },
+  { id:'CAM-06', name:'Ring Road SB', x:490, y:260, junctionId:'J6' },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+const S = {
+  roads: ROAD_NETWORK.map(r => ({
+    ...r,
+    congestion: 20 + Math.random() * 40,
+    speed: 0,
+    density: 0,
+    flow: 0,
+    predicted: Math.random() > 0.6,
+    history: Array.from({length:30}, () => 20 + Math.random() * 50)
+  })),
+  cameras: CCTV_CAMERAS.map(c => ({ ...c, vehicles: 0, alert: false, density: 0 })),
+  events: [],
+  predictions: [],
+  frame: 0,
+  simSpeed: 2,
+  baseCongest: 40,
+  vehicleVol: 200,
+  heatmap: false,
+  selectedRoad: null,
+  vehicles: [],
+  forecastData: { actual: [], predicted15: [], predicted30: [], predicted45: [] },
+  metrics: { speed: 0, congested: 0, vehicles: 0, flow: 0 },
+  lstmEpoch: 0
+};
+
+// init road speeds
+S.roads.forEach(r => {
+  r.speed = r.baseSpeed * (1 - r.congestion / 100);
+  r.density = r.congestion;
+  r.flow = Math.round(r.speed * r.density / 10);
+});
+
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+const canvas = document.getElementById('map-canvas');
+const ctx = canvas.getContext('2d');
+const mapWrap = document.getElementById('map-wrap');
+
+function resizeCanvas() {
+  canvas.width = mapWrap.clientWidth;
+  canvas.height = mapWrap.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ============================================================
+// ROAD COLOR
+// ============================================================
+function roadColor(congestion) {
+  if (congestion < 25) return '#2ecc71';
+  if (congestion < 50) return '#f0c040';
+  if (congestion < 75) return '#ff8c42';
+  return '#ff4b4b';
+}
+
+// ============================================================
+// MOVING VEHICLES
+// ============================================================
+function initVehicles() {
+  S.vehicles = [];
+  for (let i = 0; i < 60; i++) {
+    const road = S.roads[Math.floor(Math.random() * S.roads.length)];
+    S.vehicles.push({
+      road: road.id,
+      t: Math.random(),
+      speed: 0.002 + Math.random() * 0.004,
+      color: ['#fff','#f0c040','#4a9eff','#ff4b4b'][Math.floor(Math.random()*4)]
+    });
+  }
+}
+initVehicles();
+
+function updateVehicles() {
+  S.vehicles.forEach(v => {
+    const road = S.roads.find(r => r.id === v.road);
+    const speedFactor = (100 - road.congestion) / 100;
+    v.t += v.speed * speedFactor * S.simSpeed;
+    if (v.t > 1) { v.t = 0; v.road = S.roads[Math.floor(Math.random() * S.roads.length)].id; }
+  });
+}
+
+function drawVehicle(v) {
+  const road = S.roads.find(r => r.id === v.road);
+  if (!road) return;
+  const [x1, y1] = road.from;
+  const [x2, y2] = road.to;
+  const x = x1 + (x2 - x1) * v.t;
+  const y = y1 + (y2 - y1) * v.t;
+  ctx.beginPath();
+  ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = v.color;
+  ctx.globalAlpha = 0.7;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+// ============================================================
+// MAP DRAW
+// ============================================================
+function drawMap() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < w; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for (let y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+  // City blocks (background texture)
+  const blocks = [
+    [100,80,80,60],[200,100,60,40],[300,80,80,50],[400,90,70,60],
+    [120,200,100,60],[250,220,70,50],[350,210,90,60],[480,190,80,70],
+    [140,300,60,60],[280,310,80,50],[380,295,70,65],[520,280,90,55],
+    [160,380,100,50],[290,370,80,60],[420,360,70,55],
+  ];
+  ctx.fillStyle = 'rgba(255,255,255,0.018)';
+  blocks.forEach(([x,y,bw,bh]) => ctx.fillRect(x, y, bw, bh));
+
+  // Heatmap overlay
+  if (S.heatmap) drawHeatmap();
+
+  // Roads — base (shadow)
+  S.roads.forEach(r => {
+    ctx.beginPath();
+    ctx.moveTo(r.from[0], r.from[1]);
+    ctx.lineTo(r.to[0], r.to[1]);
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = r.width + 4;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  });
+
+  // Roads — colored by congestion
+  S.roads.forEach(r => {
+    const col = roadColor(r.congestion);
+    ctx.beginPath();
+    ctx.moveTo(r.from[0], r.from[1]);
+    ctx.lineTo(r.to[0], r.to[1]);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = r.width;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.85;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // Predicted jam overlays (dashed blue)
+  S.roads.filter(r => r.predicted && r.congestion > 60).forEach(r => {
+    ctx.beginPath();
+    ctx.moveTo(r.from[0], r.from[1]);
+    ctx.lineTo(r.to[0], r.to[1]);
+    ctx.strokeStyle = 'rgba(74,158,255,0.5)';
+    ctx.lineWidth = r.width + 3;
+    ctx.setLineDash([6, 4]);
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Selected road highlight
+  if (S.selectedRoad) {
+    const r = S.roads.find(x => x.id === S.selectedRoad);
+    if (r) {
+      ctx.beginPath();
+      ctx.moveTo(r.from[0], r.from[1]);
+      ctx.lineTo(r.to[0], r.to[1]);
+      ctx.strokeStyle = 'rgba(240,192,64,0.5)';
+      ctx.lineWidth = r.width + 6;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+  }
+
+  // Vehicles
+  updateVehicles();
+  S.vehicles.forEach(v => drawVehicle(v));
+
+  // Junctions
+  JUNCTIONS.forEach(j => {
+    const size = j.type === 'major' ? 7 : j.type === 'signal' ? 5 : 4;
+    ctx.beginPath();
+    ctx.arc(j.x, j.y, size, 0, Math.PI * 2);
+    ctx.fillStyle = j.type === 'major' ? 'rgba(240,192,64,0.9)' : j.type === 'signal' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)';
+    ctx.fill();
+    if (j.type === 'major') {
+      ctx.font = '9px DM Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText(j.name, j.x + 9, j.y + 3);
+    }
+  });
+
+  // CCTV camera icons
+  S.cameras.forEach(c => {
+    ctx.beginPath();
+    ctx.arc(c.x, c.y - 18, 5, 0, Math.PI * 2);
+    ctx.fillStyle = c.alert ? 'rgba(255,75,75,0.9)' : 'rgba(74,158,255,0.7)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(c.x, c.y - 18, 5, 0, Math.PI * 2);
+    ctx.strokeStyle = c.alert ? 'var(--red)' : 'rgba(74,158,255,0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Scan radius
+    if (c.alert) {
+      ctx.beginPath();
+      const pulse = Math.sin(S.frame * 0.1) * 5 + 15;
+      ctx.arc(c.x, c.y - 18, pulse, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,75,75,0.3)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  });
+
+  // Predicted hotspot markers
+  S.roads.filter(r => r.congestion > 70).forEach(r => {
+    const mx = (r.from[0] + r.to[0]) / 2;
+    const my = (r.from[1] + r.to[1]) / 2;
+    const pulse = Math.abs(Math.sin(S.frame * 0.05)) * 10 + 8;
+    ctx.beginPath();
+    ctx.arc(mx, my, pulse, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,75,75,${0.05 + 0.05 * Math.abs(Math.sin(S.frame * 0.05))})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(mx, my, 6, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,75,75,0.9)';
+    ctx.fill();
+    ctx.font = '8px DM Mono';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('JAM', mx + 8, my - 2);
+  });
+}
+
+function drawHeatmap() {
+  S.roads.forEach(r => {
+    if (r.congestion < 40) return;
+    const mx = (r.from[0] + r.to[0]) / 2;
+    const my = (r.from[1] + r.to[1]) / 2;
+    const radius = 60 + r.congestion;
+    const grd = ctx.createRadialGradient(mx, my, 0, mx, my, radius);
+    const alpha = (r.congestion / 100) * 0.25;
+    grd.addColorStop(0, `rgba(255,75,75,${alpha})`);
+    grd.addColorStop(0.5, `rgba(255,140,66,${alpha * 0.5})`);
+    grd.addColorStop(1, 'rgba(255,75,75,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(mx, my, radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+// ============================================================
+// SIMULATION TICK
+// ============================================================
+let lastEvent = 0;
+function tick() {
+  S.frame++;
+
+  // Update road congestion with drift
+  S.roads.forEach(r => {
+    const target = S.baseCongest + (Math.random() - 0.48) * 8 * S.simSpeed;
+    r.congestion = Math.max(0, Math.min(100,
+      r.congestion + (target - r.congestion) * 0.02 + (Math.random() - 0.5) * 1.5
+    ));
+    r.speed = Math.max(5, r.baseSpeed * (1 - r.congestion / 100));
+    r.density = r.congestion;
+    r.flow = Math.round(r.speed * r.density / 10);
+    r.history.push(r.congestion);
+    if (r.history.length > 60) r.history.shift();
+  });
+
+  // Update camera vehicle counts
+  S.cameras.forEach(c => {
+    c.vehicles = Math.floor(S.vehicleVol * (0.5 + Math.random() * 1.0));
+    c.density = 20 + Math.random() * 70;
+    const nearRoad = S.roads.find(r => {
+      const mx = (r.from[0]+r.to[0])/2, my=(r.from[1]+r.to[1])/2;
+      return Math.hypot(mx-c.x, my-c.y) < 120;
+    });
+    c.alert = nearRoad && nearRoad.congestion > 70;
+  });
+
+  // Metrics
+  const avgSpeed = S.roads.reduce((a,r) => a + r.speed, 0) / S.roads.length;
+  const congestedCount = S.roads.filter(r => r.congestion > 60).length;
+  const totalVeh = S.cameras.reduce((a,c) => a + c.vehicles, 0);
+  const avgFlow = S.roads.reduce((a,r) => a + r.flow, 0) / S.roads.length;
+  S.metrics = { speed: Math.round(avgSpeed), congested: congestedCount, vehicles: totalVeh, flow: Math.round(avgFlow) };
+
+  // Forecast data
+  if (S.frame % 3 === 0) {
+    const base = S.baseCongest + Math.sin(S.frame * 0.02) * 15;
+    S.forecastData.actual.push(base + (Math.random()-0.5)*8);
+    S.forecastData.predicted15.push(base + 10 + (Math.random()-0.5)*5);
+    S.forecastData.predicted30.push(base + 18 + (Math.random()-0.5)*5);
+    S.forecastData.predicted45.push(base + 22 + (Math.random()-0.5)*5);
+    ['actual','predicted15','predicted30','predicted45'].forEach(k => {
+      if (S.forecastData[k].length > 40) S.forecastData[k].shift();
+    });
+  }
+
+  // LSTM epoch counter
+  if (S.frame % 20 === 0) {
+    S.lstmEpoch++;
+    const acc = Math.min(97, 82 + Math.log(S.lstmEpoch + 1) * 3);
+    document.getElementById('lstm-acc').textContent = acc.toFixed(1) + '%';
+  }
+
+  // Periodic events
+  const now = Date.now();
+  if (now - lastEvent > 3500) {
+    lastEvent = now;
+    generateEvent();
+  }
+
+  // Predictions
+  if (S.frame % 30 === 0) updatePredictions();
+
+  // Update UI
+  if (S.frame % 2 === 0) {
+    drawMap();
+    renderRoadList();
+    renderMetrics();
+    renderForecast();
+  }
+  if (S.frame % 4 === 0) renderEventLog();
+
+  // clock
+  document.getElementById('live-time').textContent = new Date().toTimeString().split(' ')[0];
+
+  requestAnimationFrame(tick);
+}
+
+// ============================================================
+// EVENT GENERATOR
+// ============================================================
+const EVENT_TYPES = [
+  { type:'red', icon:'🚨', msgs:['Standstill detected on {road}', 'Major congestion at {junction}', 'Accident reported near {cam}'] },
+  { type:'orange', icon:'⚠️', msgs:['Heavy flow on {road}', 'CCTV {cam} — high density', 'Signal delay at {junction}'] },
+  { type:'green', icon:'✅', msgs:['Traffic clearing on {road}', 'Speed normalized — {road}', '{junction} flow restored'] },
+  { type:'blue', icon:'📊', msgs:['LSTM predicts jam on {road} in 20min', 'GPS-CV fusion validated for {cam}', 'Model retrained — epoch {n}'] },
+];
+
+function generateEvent() {
+  const t = EVENT_TYPES[Math.floor(Math.random() * EVENT_TYPES.length)];
+  const msg = t.msgs[Math.floor(Math.random() * t.msgs.length)]
+    .replace('{road}', S.roads[Math.floor(Math.random()*S.roads.length)].short)
+    .replace('{junction}', JUNCTIONS[Math.floor(Math.random()*JUNCTIONS.length)].name)
+    .replace('{cam}', S.cameras[Math.floor(Math.random()*S.cameras.length)].id)
+    .replace('{n}', S.lstmEpoch);
+  const ts = new Date().toTimeString().split(' ')[0];
+  S.events.unshift({ type: t.type, icon: t.icon, msg, ts });
+  if (S.events.length > 10) S.events.pop();
+}
+
+// ============================================================
+// PREDICTIONS (LSTM OUTPUT)
+// ============================================================
+function updatePredictions() {
+  S.predictions = S.roads
+    .map(r => ({
+      road: r,
+      prob15: Math.min(99, r.congestion + 5 + Math.random() * 20),
+      prob30: Math.min(99, r.congestion + 12 + Math.random() * 25),
+      prob45: Math.min(99, r.congestion + 18 + Math.random() * 30),
+    }))
+    .sort((a,b) => b.prob30 - a.prob30)
+    .slice(0, 5);
+  renderPredictions();
+}
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+function renderRoadList() {
+  const jamCount = S.roads.filter(r => r.congestion > 70).length;
+  document.getElementById('jam-count').textContent = jamCount + ' JAMS';
+  document.getElementById('jam-count').className = 'sec-badge ' + (jamCount > 2 ? 'badge-red' : jamCount > 0 ? 'badge-amber' : 'badge-green');
+
+  document.getElementById('road-list').innerHTML = S.roads.map(r => {
+    const col = roadColor(r.congestion);
+    const fill = `background:${roadColor(r.congestion)};width:${r.congestion}%`;
+    return `<div class="road-item ${S.selectedRoad===r.id?'selected':''}" onclick="selectRoad('${r.id}')">
+      <div class="road-color-bar" style="background:${col}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="road-name">${r.short}<small>${r.name}</small></div>
+        <div class="road-congestion"><div class="road-congestion-fill" style="${fill}"></div></div>
+      </div>
+      <div class="road-speed" style="color:${col}">${Math.round(r.speed)}<small>km/h</small></div>
+    </div>`;
+  }).join('');
+}
+
+function renderMetrics() {
+  const m = S.metrics;
+  const speedCol = m.speed > 45 ? 'var(--green)' : m.speed > 25 ? 'var(--accent)' : 'var(--red)';
+  document.getElementById('m-speed').textContent = m.speed;
+  document.getElementById('m-speed').style.color = speedCol;
+  document.getElementById('m-cong').textContent = m.congested;
+  document.getElementById('m-veh').textContent = m.vehicles;
+  document.getElementById('m-flow').textContent = m.flow;
+}
+
+function renderPredictions() {
+  document.getElementById('pred-list').innerHTML = S.predictions.map(p => {
+    const prob = Math.round(p.prob30);
+    const cls = prob > 75 ? 'prob-high' : prob > 50 ? 'prob-med' : 'prob-low';
+    const critical = prob > 75 ? 'critical' : '';
+    const barCol = prob > 75 ? 'var(--red)' : prob > 50 ? 'var(--orange)' : 'var(--green)';
+    return `<div class="pred-card ${critical}">
+      <div class="pred-header">
+        <span class="pred-route">${p.road.short}</span>
+        <span class="pred-prob ${cls}">${prob}%</span>
+      </div>
+      <div class="pred-eta">Standstill risk in 30 min · ${p.road.name}</div>
+      <div class="pred-bar-bg"><div class="pred-bar-fill" style="width:${prob}%;background:${barCol}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderEventLog() {
+  document.getElementById('event-log').innerHTML = S.events.map(e =>
+    `<div class="event-item ev-${e.type}">
+      <span class="event-icon">${e.icon}</span>
+      <span class="event-body">${e.msg}</span>
+      <span class="event-time">${e.ts}</span>
+    </div>`
+  ).join('');
+}
+
+// ============================================================
+// FORECAST CHART
+// ============================================================
+function renderForecast() {
+  const fc = document.getElementById('forecast-canvas');
+  const fctx = fc.getContext('2d');
+  fc.width = fc.offsetWidth || 264;
+  const w = fc.width, h = 100;
+  fctx.clearRect(0, 0, w, h);
+
+  const datasets = [
+    { key:'actual', color:'#f0c040', label:'Actual', dash:[] },
+    { key:'predicted15', color:'#ff8c42', label:'+15m', dash:[3,3] },
+    { key:'predicted30', color:'#ff4b4b', label:'+30m', dash:[5,3] },
+    { key:'predicted45', color:'rgba(255,75,75,0.5)', label:'+45m', dash:[2,4] },
+  ];
+
+  // Grid
+  fctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  fctx.lineWidth = 0.5;
+  [0.25,0.5,0.75].forEach(f => {
+    const y = h - f * h * 0.9 - 5;
+    fctx.beginPath(); fctx.moveTo(0,y); fctx.lineTo(w,y); fctx.stroke();
+  });
+
+  datasets.forEach(ds => {
+    const data = S.forecastData[ds.key];
+    if (data.length < 2) return;
+    fctx.beginPath();
+    fctx.strokeStyle = ds.color;
+    fctx.lineWidth = ds.key === 'actual' ? 2 : 1.2;
+    fctx.setLineDash(ds.dash);
+    data.forEach((v, i) => {
+      const x = (i / (data.length - 1)) * w;
+      const y = h - 5 - (v / 100) * (h - 15);
+      i === 0 ? fctx.moveTo(x, y) : fctx.lineTo(x, y);
+    });
+    fctx.stroke();
+    fctx.setLineDash([]);
+  });
+
+  // Area under actual
+  if (S.forecastData.actual.length > 1) {
+    fctx.beginPath();
+    const data = S.forecastData.actual;
+    data.forEach((v, i) => {
+      const x = (i / (data.length - 1)) * w;
+      const y = h - 5 - (v / 100) * (h - 15);
+      i === 0 ? fctx.moveTo(x, y) : fctx.lineTo(x, y);
+    });
+    fctx.lineTo(w, h); fctx.lineTo(0, h); fctx.closePath();
+    fctx.fillStyle = 'rgba(240,192,64,0.06)';
+    fctx.fill();
+  }
+}
+
+// ============================================================
+// CCTV FEEDS
+// ============================================================
+const cctvCanvases = {};
+
+function renderCCTV() {
+  const grid = document.getElementById('cctv-grid');
+  if (!grid) return;
+  grid.innerHTML = S.cameras.map(c =>
+    `<div class="cctv-feed ${c.alert?'alert-feed':''}" onclick="focusCamera('${c.id}')">
+      <canvas class="cctv-canvas" id="cv-${c.id}" height="80"></canvas>
+      <div class="cctv-rec"><span style="width:5px;height:5px;border-radius:50%;background:var(--red);display:inline-block;animation:blink 1s infinite"></span>REC</div>
+      <div class="cctv-label">${c.id} · ${c.name} <span>${c.vehicles} VEH</span></div>
+    </div>`
+  ).join('');
+  S.cameras.forEach(c => drawCCTVFeed(c));
+}
+
+function drawCCTVFeed(camera) {
+  const el = document.getElementById('cv-' + camera.id);
+  if (!el) return;
+  el.width = el.offsetWidth || 132;
+  const w = el.width, h = 80;
+  const c = el.getContext('2d');
+
+  c.fillStyle = '#0a0f0a';
+  c.fillRect(0, 0, w, h);
+
+  // Road stripe
+  c.fillStyle = '#1a1f1a';
+  c.fillRect(0, h*0.35, w, h*0.3);
+  // Lane markings
+  c.strokeStyle = 'rgba(255,255,0,0.3)';
+  c.setLineDash([8,8]);
+  c.lineWidth = 1;
+  c.beginPath(); c.moveTo(0, h*0.5); c.lineTo(w, h*0.5); c.stroke();
+  c.setLineDash([]);
+
+  // Vehicles (bounding boxes, YOLO style)
+  const vCount = Math.floor(camera.vehicles / 40) + 1;
+  const cols = ['rgba(0,255,0,0.8)', 'rgba(255,255,0,0.7)', 'rgba(0,200,255,0.7)'];
+  for (let i = 0; i < Math.min(vCount, 6); i++) {
+    const seed = (S.frame * 0.05 + i * 7.3 + camera.x) % 1;
+    const bx = 5 + (seed * (w - 30));
+    const by = h * 0.38 + (i % 2) * 10;
+    const bw = 18 + i * 3, bh = 12 + i * 2;
+    const col = cols[i % cols.length];
+    c.strokeStyle = col;
+    c.lineWidth = 1;
+    c.strokeRect(bx, by, bw, bh);
+    c.fillStyle = col;
+    c.font = '6px DM Mono';
+    c.fillText('CAR ' + (i+1).toString().padStart(2,'0'), bx, by - 2);
+  }
+
+  // Density bar
+  const densityPct = camera.density / 100;
+  c.fillStyle = 'rgba(0,0,0,0.6)';
+  c.fillRect(2, h - 12, 60, 8);
+  c.fillStyle = densityPct > 0.7 ? '#ff4b4b' : densityPct > 0.4 ? '#ff8c42' : '#2ecc71';
+  c.fillRect(2, h - 12, 60 * densityPct, 8);
+
+  // Scan line effect
+  const scanY = (S.frame * 1.5 + camera.x) % h;
+  c.fillStyle = 'rgba(0,255,0,0.04)';
+  c.fillRect(0, scanY, w, 2);
+
+  // Alert overlay
+  if (camera.alert && Math.sin(S.frame * 0.15) > 0) {
+    c.fillStyle = 'rgba(255,75,75,0.12)';
+    c.fillRect(0,0,w,h);
+  }
+
+  // Timestamp overlay
+  c.fillStyle = 'rgba(0,255,0,0.5)';
+  c.font = '7px DM Mono';
+  c.fillText(new Date().toTimeString().split(' ')[0], w - 52, 10);
+}
+
+// ============================================================
+// CONTROLS
+// ============================================================
+document.getElementById('cong-slider').addEventListener('input', e => {
+  S.baseCongest = +e.target.value;
+  document.getElementById('cong-val').textContent = e.target.value + '%';
+});
+document.getElementById('vol-slider').addEventListener('input', e => {
+  S.vehicleVol = +e.target.value;
+  document.getElementById('vol-val').textContent = e.target.value;
+});
+document.getElementById('spd-slider').addEventListener('input', e => {
+  S.simSpeed = +e.target.value;
+  document.getElementById('spd-val').textContent = e.target.value + 'x';
+});
+
+function triggerAccident() {
+  const road = S.roads[Math.floor(Math.random() * S.roads.length)];
+  road.congestion = 90 + Math.random() * 10;
+  S.baseCongest = 75;
+  document.getElementById('cong-slider').value = 75;
+  document.getElementById('cong-val').textContent = '75%';
+  S.events.unshift({ type:'red', icon:'🚨', msg:`ACCIDENT: Multi-vehicle collision on ${road.short} — emergency services dispatched`, ts: new Date().toTimeString().split(' ')[0] });
+  addAlert('Accident simulation triggered on ' + road.name);
+}
+
+function triggerRush() {
+  S.baseCongest = 80;
+  S.vehicleVol = 420;
+  document.getElementById('cong-slider').value = 80;
+  document.getElementById('cong-val').textContent = '80%';
+  document.getElementById('vol-slider').value = 420;
+  document.getElementById('vol-val').textContent = '420';
+  S.events.unshift({ type:'orange', icon:'⏰', msg:'Rush hour simulation active — all corridors heavy', ts: new Date().toTimeString().split(' ')[0] });
+}
+
+function clearAll() {
+  S.baseCongest = 15;
+  S.vehicleVol = 80;
+  document.getElementById('cong-slider').value = 15;
+  document.getElementById('cong-val').textContent = '15%';
+  document.getElementById('vol-slider').value = 80;
+  document.getElementById('vol-val').textContent = '80';
+  S.events.unshift({ type:'green', icon:'✅', msg:'Traffic cleared — all corridors free flow', ts: new Date().toTimeString().split(' ')[0] });
+}
+
+function randomizeTraffic() {
+  S.roads.forEach(r => r.congestion = Math.random() * 100);
+  S.events.unshift({ type:'blue', icon:'🔀', msg:'Traffic state randomized for demo', ts: new Date().toTimeString().split(' ')[0] });
+}
+
+function zoom(f) { /* simple visual zoom placeholder */ }
+function resetView() { }
+function toggleHeatmap() {
+  S.heatmap = !S.heatmap;
+  document.getElementById('hm-btn').style.opacity = S.heatmap ? '1' : '0.5';
+}
+function selectRoad(id) { S.selectedRoad = S.selectedRoad === id ? null : id; }
+function focusCamera(id) { addAlert('Focused camera: ' + id); }
+function addAlert(msg) {
+  S.events.unshift({ type:'blue', icon:'📡', msg, ts: new Date().toTimeString().split(' ')[0] });
+}
+
+// ============================================================
+// TOOLTIP
+// ============================================================
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const tooltip = document.getElementById('map-tooltip');
+
+  // Check junctions
+  for (const j of JUNCTIONS) {
+    if (Math.hypot(mx - j.x, my - j.y) < 15) {
+      const nearRoad = S.roads.find(r => {
+        const rmx=(r.from[0]+r.to[0])/2, rmy=(r.from[1]+r.to[1])/2;
+        return Math.hypot(rmx-j.x, rmy-j.y) < 80;
+      });
+      tooltip.innerHTML = `<strong style="color:var(--accent)">${j.name}</strong><br>
+        Type: ${j.type}<br>
+        ${nearRoad ? `Nearby: ${nearRoad.short}<br>Speed: ${Math.round(nearRoad.speed)} km/h<br>Congestion: ${Math.round(nearRoad.congestion)}%` : ''}`;
+      tooltip.style.left = (mx + 12) + 'px';
+      tooltip.style.top = (my - 10) + 'px';
+      tooltip.style.display = 'block';
+      return;
+    }
+  }
+  // Check roads
+  for (const r of S.roads) {
+    const [x1,y1] = r.from, [x2,y2] = r.to;
+    const len = Math.hypot(x2-x1, y2-y1);
+    const t = Math.max(0, Math.min(1, ((mx-x1)*(x2-x1) + (my-y1)*(y2-y1)) / (len*len)));
+    const px = x1 + t*(x2-x1), py = y1 + t*(y2-y1);
+    if (Math.hypot(mx-px, my-py) < 8) {
+      tooltip.innerHTML = `<strong style="color:${roadColor(r.congestion)}">${r.name}</strong><br>
+        Speed: ${Math.round(r.speed)} km/h<br>
+        Congestion: ${Math.round(r.congestion)}%<br>
+        Flow: ${r.flow} veh/min<br>
+        Status: ${r.congestion>70?'🔴 STANDSTILL':r.congestion>50?'🟠 CONGESTED':r.congestion>25?'🟡 SLOW':'🟢 FREE FLOW'}`;
+      tooltip.style.left = (mx + 12) + 'px';
+      tooltip.style.top = (my - 10) + 'px';
+      tooltip.style.display = 'block';
+      return;
+    }
+  }
+  tooltip.style.display = 'none';
+});
+canvas.addEventListener('mouseleave', () => {
+  document.getElementById('map-tooltip').style.display = 'none';
+});
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  // All content always renders — tabs just highlight focus
+}
+
+// ============================================================
+// CCTV AUTO-REFRESH
+// ============================================================
+setInterval(() => {
+  S.cameras.forEach(c => drawCCTVFeed(c));
+  renderCCTV();
+}, 200);
+
+// ============================================================
+// INIT
+// ============================================================
+updatePredictions();
+renderRoadList();
+renderEventLog();
+S.events.push({ type:'blue', icon:'🧠', msg:'LSTM model initialized — 3-layer RNN, 128 hidden units', ts: new Date().toTimeString().split(' ')[0] });
+S.events.push({ type:'green', icon:'✅', msg:'GPS API fusion active — Google Maps Routes API connected', ts: new Date().toTimeString().split(' ')[0] });
+S.events.push({ type:'green', icon:'📷', msg:'6 CCTV feeds active — YOLO v8 detection running', ts: new Date().toTimeString().split(' ')[0] });
+renderCCTV();
+tick();
+</script>
+</body>
+</html>
